@@ -2,9 +2,11 @@ local G=_G
 if string.sub(_VERSION,1,7)=="Lua 5.0" then
 	G=require"uniformapi/lua50"(G)
 end
+
+G.debugprint = G.print -- show debug message
+
 local uniformapi = require "uniformapi"
-local package = require"package"
-local A = uniformapi(G, package.loaded)
+local A = uniformapi(require"package".loaded)
 assert(A.string.dump==nil)
 do
 	local env = {}

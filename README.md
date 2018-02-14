@@ -7,6 +7,27 @@ Used as minimal requirement to setup more advanced stuff.
 
 uniformapi is the minimal requirement for [lua-box](https://github.com/tst2005/lua-box).
 
+# How to use
+
+## Quickly
+
+``` lua
+_G = require "uniformapi"(_G)
+```
+
+## Run code
+
+```lua
+
+local G = require "uniformapi"(_G)
+local x = G.load([[
+assert(unpack)
+print(table.unpack({1,2,3}))
+print("deprecated:", _DEPRECATED)
+]], "", "t", G)()
+
+```
+
 # supported versions
 
 * Lua 5.1

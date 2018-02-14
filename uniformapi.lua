@@ -1,9 +1,10 @@
 -- uniformapi({_G=_G, package={loaded=package.loaded}})
 local assert = assert
 local _G=nil
-local print = print
-return function(mods)
-	local G = assert(mods._G)
+return function(opts)
+	local mods = assert(opts.package.loaded)
+	local G = assert(opts._G)
+	local debugprint = G.debugprint or function() end
 	if mods == nil then
 		mods = assert(env.package.loaded)
 	end
@@ -12,7 +13,7 @@ return function(mods)
 	if G ~= mods then
 		for name,mod in G.pairs(mods) do
 			if mod==true and G[name]~=true then
-				print("autofix mod value from global env for "..name)
+				debugprint("autofix mod value from global env for "..name)
 				mods[name] = G[name]
 			else
 				mods[name]=mod
@@ -104,7 +105,7 @@ return function(mods)
 	for _,k in ipairs({"table", "string", "io", "coroutine", "math", "os", "utf8",}) do
 		local v = mods[k]
 		if v==true and type(G[k])=="table" then
-			print("MODULEWORKAROUND:", k)
+			debugprint("MODULEWORKAROUND:", k)
 			v=G[k]
 		end
 		if type(v)=="table" then
@@ -115,7 +116,7 @@ return function(mods)
 
 	-- IO --
 	do
-print("IO")
+debugprint("IO")
 		local m=Mods.io
 		local io = mods.io
 		m.stdin  = io.stdin
@@ -125,7 +126,7 @@ print("IO")
 
 	-- TABLE --
 	do
-print("TABLE")
+debugprint("TABLE")
 		local m=Mods.table
 		if not m.unpack then m.unpack = G.unpack end
 	end
@@ -133,7 +134,7 @@ print("TABLE")
 
 	-- STRING --
 	do
-print("STRING")
+debugprint("STRING")
 		local m=Mods.string
 		m.dump = nil
 	end
@@ -141,7 +142,7 @@ print("STRING")
 	-- DEBUG --
 	Mods.debug = {}
 	do
-print("DEBUG")
+debugprint("DEBUG")
 		local m=Mods.debug
 		if mods.debug then
 			table_update(mods.debug, m)
@@ -157,10 +158,10 @@ print("DEBUG")
 				end
 			end
 		else
-			print("WARNING: the uniformapi setup a on-demand debug module")
+			debugprint("WARNING: the uniformapi setup a on-demand debug module")
 			os.exit(1)
 			if mods.debug==nil and mods.package.preload.debug==nil then
-				print("WARNING: the standard debug module seems unavailable")
+				debugprint("WARNING: the standard debug module seems unavailable")
 			end
 			-- require the debug module only on demand
 			local setmetatable = G.setmetatable
@@ -175,7 +176,7 @@ print("DEBUG")
 
 	-- PACKAGE --
 	do
-print("PACKAGE")
+debugprint("PACKAGE")
 		local m={}
 		Mods.package = m
 		table_update(mods.package, m)
@@ -186,11 +187,11 @@ print("PACKAGE")
 		end
 		-- PACKAGE.config --
 		if not m.config then -- package.config seems not documented in lua/5.1 manual
-			print("FIXME: missing package.config")
+			debugprint("FIXME: missing package.config")
 		end
 		-- PACKAGE.searchpath --
 		if not m.searchpath then
-			print("FIXED: missing package.searchpath, workaround!")
+			debugprint("FIXED: missing package.searchpath, workaround!")
 			local error = G.error
 			local io_open = assert( (mods.io or {}).open)
 			local type = G.type
