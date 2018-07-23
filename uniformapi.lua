@@ -1,28 +1,28 @@
 -- uniformapi({_G=_G, package={loaded=package.loaded}})
+-- uniformapi(_G)
+-- uniformapi(package.loaded)
 local assert = assert
-local _G=nil
-return function(opts)
-	local mods = assert(opts.package.loaded)
+local _G=nil -- for dev, avoid mistake of _G use
+
+local function uniformize(opts)
+	local loaded = assert(opts.package.loaded)
 	local G = assert(opts._G)
 	local debugprint = G.debugprint or function() end
-	if mods == nil then
-		mods = assert(env.package.loaded)
-	end
 	local assert = assert(G.assert)
 	local type = assert(G.type)
-	if G ~= mods then
-		for name,mod in G.pairs(mods) do
+	if G ~= loaded then
+		for name,mod in G.pairs(loaded) do
 			if mod==true and G[name]~=true then
 				debugprint("autofix mod value from global env for "..name)
-				mods[name] = G[name]
+				loaded[name] = G[name]
 			else
-				mods[name]=mod
+				loaded[name] = mod
 			end
 		end
 	end
 
-	local table = mods.table or G.table
-	local string = mods.string or G.string
+	local table = loaded.table or G.table
+	local string = loaded.string or G.string
 
 	local function table_update(t_src, t_dst)
 		for k,v in G.pairs(t_src) do
@@ -33,30 +33,29 @@ return function(opts)
 		return t_dst
 	end
 
-	local DEPRECATED = {}
+	local deprecated = {}
 	local M = {}
 	local Mods = {}
 	M.pairs = G.pairs -- TODO
 	M.ipairs = G.ipairs -- TODO
-	M.DEPRECATED = DEPRECATED
 	
-	local deny = {}
+	local skip = {}
 	local function depreciate(name)
-		deny[name]=true
-		DEPRECATED[name] = G[name]
+		skip[name] = true
+		deprecated[name] = G[name]
 	end
 	depreciate "setfenv"
 	depreciate "getfenv"
 	depreciate "module"
 
 	for k,v in pairs(G) do
-		if type(v)=="function" and not deny[k] then
+		if type(v)=="function" and not skip[k] then
 			M[k]=v
 		end
 	end
 --[[	setmetatable(M, {
 		__index=function(_t,k)
-			if deny[k] then return nil end
+			if skip[k] then return nil end
 			return G[k]
 		end,
 		-- __pairs -- not implemented yet !
@@ -77,8 +76,8 @@ return function(opts)
 			local loadstring = assert(G.loadstring)
 			local type = assert(G.type)
 			local setfenv = assert(G.setfenv)
-			local byte = assert(mods.string.byte)
-			local find = assert(mods.string.find)
+			local byte = assert(loaded.string.byte)
+			local find = assert(loaded.string.find)
 
 			local native_load = load
 			function compat_load(str,src,mode,env)
@@ -103,7 +102,7 @@ return function(opts)
 	end
 
 	for _,k in ipairs({"table", "string", "io", "coroutine", "math", "os", "utf8",}) do
-		local v = mods[k]
+		local v = loaded[k]
 		if v==true and type(G[k])=="table" then
 			debugprint("MODULEWORKAROUND:", k)
 			v=G[k]
@@ -115,37 +114,33 @@ return function(opts)
 	end
 
 	-- IO --
-	do
-debugprint("IO")
-		local m=Mods.io
-		local io = mods.io
-		m.stdin  = io.stdin
-		m.stdout = io.stdout
-		m.stderr = io.stderr
+	do	debugprint("IO")
+		local u=Mods.io
+		local io = loaded.io
+		u.stdin  = io.stdin
+		u.stdout = io.stdout
+		u.stderr = io.stderr
 	end
 
 	-- TABLE --
-	do
-debugprint("TABLE")
+	do	debugprint("TABLE")
 		local m=Mods.table
 		if not m.unpack then m.unpack = G.unpack end
 	end
 	depreciate "unpack"
 
 	-- STRING --
-	do
-debugprint("STRING")
+	do	debugprint("STRING")
 		local m=Mods.string
 		m.dump = nil
 	end
 
 	-- DEBUG --
 	Mods.debug = {}
-	do
-debugprint("DEBUG")
+	do	debugprint("DEBUG")
 		local m=Mods.debug
-		if mods.debug then
-			table_update(mods.debug, m)
+		if loaded.debug then
+			table_update(loaded.debug, m)
 			do
 				assert(m.setmetatable,"missing debug.setmetatable")
 				local x={}
@@ -158,9 +153,9 @@ debugprint("DEBUG")
 				end
 			end
 		else
-			debugprint("WARNING: the uniformapi setup a on-demand debug module")
+			debugprint("WARNING: the uniformapi setup an on-demand debug module")
 			os.exit(1)
-			if mods.debug==nil and mods.package.preload.debug==nil then
+			if loaded.debug==nil and loaded.package.preload.debug==nil then
 				debugprint("WARNING: the standard debug module seems unavailable")
 			end
 			-- require the debug module only on demand
@@ -175,11 +170,10 @@ debugprint("DEBUG")
 	end
 
 	-- PACKAGE --
-	do
-debugprint("PACKAGE")
+	do	debugprint("PACKAGE")
 		local m={}
 		Mods.package = m
-		table_update(mods.package, m)
+		table_update(loaded.package, m)
 		-- PACKAGE.searchers --
 		if not m.searchers and m.loaders then
 			m.searchers = m.loaders
@@ -193,7 +187,7 @@ debugprint("PACKAGE")
 		if not m.searchpath then
 			debugprint("FIXED: missing package.searchpath, workaround!")
 			local error = G.error
-			local io_open = assert( (mods.io or {}).open)
+			local io_open = assert( (loaded.io or {}).open)
 			local type = G.type
 			local gsub = G.string.gsub
 			local gmatch = G.string.gmatch
@@ -238,5 +232,32 @@ debugprint("PACKAGE")
 	end
 
 	--M._VERSION=""
-	return M, Mods
+	return M, Mods, deprecated
 end
+
+local M = {}
+
+local function setup(opts)
+	if not M.mods then
+		assert(opts._G)
+		assert(opts.package.loaded)
+		local m, mods, deprecated = uniformize(opts)
+		M.m, M.mods, M.deprecated = assert(m), assert(mods), assert(deprecated)
+	end
+	return assert(M.m), assert(M.mods), assert(M.deprecated)
+end
+
+M.uniformize = uniformize
+M.setup = setup
+
+-- allow to call the module
+-- * v1 (compat 0.1.0+alpha)
+--setmetatable(M, {__call = function(_, opts)
+--	local m, mods, deprecated = setup(opts)
+--	m.DEPRECATED = deprecated
+--	return m, mods
+--end})
+-- * v2 (no backward compat)
+setmetatable(M, {__call = function(_, opts) return setup(opts) end})
+
+return M
