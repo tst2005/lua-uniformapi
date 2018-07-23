@@ -36,7 +36,7 @@ print("deprecated:", _DEPRECATED)
   * do not use the Lua 5.1 `unpack`
 * Like Lua [5.2](https://tst2005.github.io/manual/lua/5.2/manual.html#pdf-debug.setmetatable) `debug.setmetatable(t, mt)` returns the `t` value
 * Like Lua [5.2](https://tst2005.github.io/manual/lua/5.2/manual.html#pdf-package.searchers) `package.searchers`
-  * do not use the Lua 5.1 package.loaders
+  * do not use the Lua 5.1 `package.loaders`
 * Like Lua [5.2](https://tst2005.github.io/manual/lua/5.2/manual.html#pdf-package.searcherpath) `package.searchpath(name, path [, sep [, rep]])`
 
 # supported versions
