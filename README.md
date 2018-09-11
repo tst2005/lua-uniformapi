@@ -2,10 +2,9 @@
 
 # Goal
 
-A way to get a stable behavior for some critical lua functions.
-Used as minimal requirement to setup more advanced stuff.
-
-I made uniformapi as base (minimal requirement) for [lua-box](https://github.com/tst2005/lua-box).
+A way to get a stable/uniform behavior for some critical lua functions.
+Uniformapi needs some minimal requirement.
+Uniformapi is made to build more advanced stuff over the top of him ([lua-box](https://github.com/tst2005/lua-box) in my case).
 
 # How to use
 
@@ -28,7 +27,7 @@ print("deprecated:", _DEPRECATED)
 
 ```
 
-## uniform api content
+## Uniform api content
 
 * Like Lua [5.2](https://tst2005.github.io/manual/lua/5.2/manual.html#pdf-load) `load(chunk [, chunkname [, mode [, env]]])` (support of env as 4th argument)
   * do not use the Lua 5.1 `setfenv`, `getfenv`, `loadstring`
@@ -39,7 +38,7 @@ print("deprecated:", _DEPRECATED)
   * do not use the Lua 5.1 `package.loaders`
 * Like Lua [5.2](https://tst2005.github.io/manual/lua/5.2/manual.html#pdf-package.searcherpath) `package.searchpath(name, path [, sep [, rep]])`
 
-# supported versions
+# Supported versions
 
 * Lua 5.1
 * Lua 5.2
@@ -47,11 +46,11 @@ print("deprecated:", _DEPRECATED)
 * LuaJIT 2.0 (equal to Lua 5.1)
 * LuaJIT 2.1 (partialy equal to Lua 5.2)
 
-# not supported versions
+# Not supported versions
 
 * Lua 5.0 seems to have too many things to be fixed to be supported but I have tried for the fun!
 
-If you want also try
+If you want even try
 
 ```lua
 local G=_G
